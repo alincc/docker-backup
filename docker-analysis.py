@@ -18,7 +18,7 @@ def hasnt(dictionary, index, value):
 def match(dictionary, index, pattern):
     return index in dictionary and dictionary[index] and re.match(pattern, dictionary[index])
 def isnt(dictionary, index, value, pre='', post=''):
-    if index in dictionary and dictionary[index] and dictionary[index]!=value:
+    if index in dictionary and dictionary[index] and not dictionary[index] in value:
         if pre=='' and post=='':
             return True
         else:
@@ -38,6 +38,33 @@ def compare(container1, container2):
     if match(h2, 'VolumesFrom', '^'+name1+'$'): return 1
     if match(h2, 'Links', '^/?'+name1+':?.*$'): return 1
     return -1 if name1<name2 else 1
+
+class Object(object):
+    pass
+
+class DockerObject:
+    def __init__(self, name):
+        assign(self, json.loads(subprocess.check_output(['docker', 'inspect', name]).decode('utf-8'))[0].items())
+    def assign(o, arg):
+        if isinstance(arg, dict):
+            for k, v in arg.items():
+                setattr(o, k, assign(Object(), v))
+            return o
+        else:
+            return arg
+
+class Container(DockerObject):
+    def __init__(self, name):
+        super().__init__(name)
+    def command(self):
+        s = self.State
+        o = self.Config
+        h = self.HostConfig
+        r = h.RestartPolicy
+
+class Image(DockerObject):
+    def __init__(self, name):
+        super().__init__(name)
 
 def build(container):
     for c in json.loads(subprocess.check_output(['docker', 'inspect', container]).decode('utf-8')):
@@ -59,7 +86,7 @@ def build(container):
                 params+='create'
             if isnt(r, 'Name', 'no'):  params+='--restart '+r['Name']+(isnt(r, 'MaximumRetryCount', 0, ':'))
             if has(h, 'Privileged'):   params+='--priviledged'
-            if isnt(h, 'NetworkMode', 'default'): params+='--network '+h['NetworkMode']
+            if isnt(h, 'NetworkMode', ['default', 'bridge']): params+='--network '+h['NetworkMode']
             if has(c, 'Name'):         params+='--name '+c['Name']
             params+=' '.join(['-p '+text(y, 'HostIp', ':')+y['HostPort']+':'+x for x in h['PortBindings'] for y in h['PortBindings'][x]])
             if has(o, 'ExposedPorts'): params+=' '.join(['--expose '+x for x in o['ExposedPorts'] if hasnt(ic, 'ExposedPorts', x)])
