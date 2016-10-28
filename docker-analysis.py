@@ -85,7 +85,7 @@ class Container(DockerObject):
             return True
         if other.name in self.links():
             return False
-        return self.name < other.name
+        return self.name[::-1] < other.name[::-1]
     def volumes(self):
         res = []
         if not self.has(self.HostConfig, 'VolumesFrom'): return res
