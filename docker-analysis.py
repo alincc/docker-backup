@@ -69,6 +69,13 @@ class Container(DockerObject):
             return Container.registry[name]
         else:
             return Container(name)
+    @staticmethod
+    def create(names, recurse=False):
+        for name in names:
+            if name: c = Container.get(name)
+            if recurse:
+                Container.create(c.volumes() + c.links(), recurse)
+        return Container.registry
     def __lt__(self, other):
         if self.name in other.volumes():
             return True
@@ -127,9 +134,5 @@ class Container(DockerObject):
         return { 'cmd': cmd, 'params': params }
 
 containers = args.container or subprocess.check_output(['docker', 'ps', '-aq']).decode('utf-8').split('\n')
-cs = []
-for container in containers:
-    if (container):
-        cs.append(Container(container))
-for c in sorted(cs):
+for c in sorted(list(Container.create(containers, args.recurse).values())):
     print('docker '+c.build()['cmd']+' '+' '.join(c.build()['params']))
