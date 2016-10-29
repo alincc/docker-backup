@@ -124,7 +124,7 @@ class Container(DockerObject):
         if restart: params+='--restart '+restart
         elif isnt(r, 'Name', 'no'): params+='--restart '+r['Name']+(isnt(r, 'MaximumRetryCount', 0, ':'))
         if has(h, 'Privileged'): params+='--priviledged'
-        if isnt(h, 'NetworkMode', ['default', 'bridge']): params+='--network '+h['NetworkMode']
+        if isnt(h, 'NetworkMode', ['default', 'bridge']): params+='--net '+h['NetworkMode']
         params+='--name '+self.name
         params+=' '.join(['-p '+text(y, 'HostIp', ':')+y['HostPort']+':'+x for x in h['PortBindings'] for y in h['PortBindings'][x]])
         if has(o, 'ExposedPorts'): params+=' '.join(['--expose '+x for x in o['ExposedPorts'] if hasnt(ic, 'ExposedPorts', x)])
