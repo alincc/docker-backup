@@ -111,7 +111,7 @@ class Container(DockerObject):
         match = self.match
         isnt = self.isnt
         text = self.text
-        if s['Status']=='running':
+        if s['Running']:
             if (o['AttachStdin'] and o['AttachStdout'] and
                 o['AttachStderr'] and o['Tty'] and
                 o['OpenStdin'] and o['StdinOnce']):
