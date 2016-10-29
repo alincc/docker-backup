@@ -4,6 +4,8 @@ import argparse, subprocess, json, re, itertools
 parser = argparse.ArgumentParser()
 parser.add_argument('container', nargs='*', help='name of the containers')
 parser.add_argument('-r', '--recurse', action='store_true', help='recursively setup container')
+parser.add_argument('-c', '--command', help='docker command, e.g. -c "run -d"')
+parser.add_argument('--restart', help='override the restart argument, e.g. --restart unless-stopped')
 args = parser.parse_args()
 
 class Object(object):
@@ -98,7 +100,7 @@ class Container(DockerObject):
         res += [ re.sub(':.*$', '', l).strip('/') for l in self.HostConfig.Links ]
         for l in itertools.islice(res, 0, len(res)): res += Container.get(l).links()
         return res
-    def build(self):
+    def build(self, restart=False):
         s = self['State']
         o = self['Config']
         h = self['HostConfig']
@@ -119,8 +121,9 @@ class Container(DockerObject):
         else:
             cmd='create'
         params = self.c_list()
-        if isnt(r, 'Name', 'no'):  params+='--restart '+r['Name']+(isnt(r, 'MaximumRetryCount', 0, ':'))
-        if has(h, 'Privileged'):   params+='--priviledged'
+        if restart: params+='--restart '+restart
+        elif isnt(r, 'Name', 'no'): params+='--restart '+r['Name']+(isnt(r, 'MaximumRetryCount', 0, ':'))
+        if has(h, 'Privileged'): params+='--priviledged'
         if isnt(h, 'NetworkMode', ['default', 'bridge']): params+='--network '+h['NetworkMode']
         params+='--name '+self.name
         params+=' '.join(['-p '+text(y, 'HostIp', ':')+y['HostPort']+':'+x for x in h['PortBindings'] for y in h['PortBindings'][x]])
@@ -135,4 +138,5 @@ class Container(DockerObject):
 
 containers = args.container or subprocess.check_output(['docker', 'ps', '-aq']).decode('utf-8').split('\n')
 for c in sorted(list(Container.create(containers, args.recurse).values())):
-    print('docker '+c.build()['cmd']+' '+' '.join(c.build()['params']))
+    b = c.build(args.restart)
+    print('docker '+(args.command or b['cmd']+' '+' '.join(b['params'])))
