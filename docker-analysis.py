@@ -139,4 +139,4 @@ class Container(DockerObject):
 containers = args.container or subprocess.check_output(['docker', 'ps', '-aq']).decode('utf-8').split('\n')
 for c in sorted(list(Container.create(containers, args.recurse).values())):
     b = c.build(args.restart)
-    print('docker '+(args.command or b['cmd']+' '+' '.join(b['params'])))
+    print('docker '+(args.command or b['cmd'])+' '+' '.join(b['params']))
