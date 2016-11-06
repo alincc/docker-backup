@@ -3,6 +3,7 @@
 import argparse, subprocess, json, re, itertools
 parser = argparse.ArgumentParser()
 parser.add_argument('container', nargs='*', help='name of the containers')
+parser.add_argument('-d', '--dot', action='store_true', help='draw dot diagram instead of commandline')
 parser.add_argument('-r', '--recurse', action='store_true', help='recursively setup container')
 parser.add_argument('-c', '--command', help='docker command, e.g. -c "run -d"')
 parser.add_argument('--restart', help='override the restart argument, e.g. --restart unless-stopped')
@@ -100,7 +101,22 @@ class Container(DockerObject):
         res += [ re.sub(':.*$', '', l).strip('/') for l in self.HostConfig.Links ]
         for l in itertools.islice(res, 0, len(res)): res += Container.get(l).links()
         return res
-    def build(self, restart=False):
+    def dot_(self):
+        for v in self.volumes():
+            print('"', self.name, '" -> "', v, '" [label="volumes"];')
+        if self.has(self.HostConfig, 'Links'):
+            for l in self.HostConfig.Links:
+                print('"', self.name, '" -> "', re.sub(':.*$', '', l).strip('/'), '" [label="', re.sub('^.*:/'+self.name+'/', '', l), '"];')
+    @staticmethod
+    def dot():
+        print('digraph G {')
+        print('rankdir=LR;')
+        for c in Container.registry.keys():
+            print('"', c, '";')
+        for c in Container.registry.values():
+            c.dot_()
+        print('}')
+    def commandline(self, restart=False):
         s = self['State']
         o = self['Config']
         h = self['HostConfig']
@@ -137,6 +153,10 @@ class Container(DockerObject):
         return { 'cmd': cmd, 'params': params }
 
 containers = args.container or subprocess.check_output(['docker', 'ps', '-aq']).decode('utf-8').split('\n')
-for c in sorted(list(Container.create(containers, args.recurse).values())):
-    b = c.build(args.restart)
-    print('docker '+(args.command or b['cmd'])+' '+' '.join(b['params']))
+if (args.dot):
+    Container.create(containers, args.recurse)
+    Container.dot()
+else:
+    for c in sorted(list(Container.create(containers, args.recurse).values())):
+        b = c.commandline(args.restart)
+        print('docker '+(args.command or b['cmd'])+' '+' '.join(b['params']))
