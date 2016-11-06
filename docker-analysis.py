@@ -106,7 +106,7 @@ class Container(DockerObject):
             print('"'+self.name+'" -> "'+v+'" [label="volumes"];')
         if self.has(self.HostConfig, 'Links'):
             for l in self.HostConfig.Links:
-                print('"'+self.name+'" -> "'+re.sub(':.*$'+''+l).strip('/')+'" [label="'+re.sub('^.*:/'+self.name+'/'+''+l)+'"];')
+                print('"'+self.name+'" -> "'+re.sub(':.*$', '', l).strip('/')+'" [label="'+re.sub('^.*:/'+self.name+'/', '', l)+'"];')
     @staticmethod
     def dot():
         print('digraph G {')
