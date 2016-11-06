@@ -103,16 +103,16 @@ class Container(DockerObject):
         return res
     def dot_(self):
         for v in self.volumes():
-            print('"', self.name, '" -> "', v, '" [label="volumes"];')
+            print('"'+self.name+'" -> "'+v+'" [label="volumes"];')
         if self.has(self.HostConfig, 'Links'):
             for l in self.HostConfig.Links:
-                print('"', self.name, '" -> "', re.sub(':.*$', '', l).strip('/'), '" [label="', re.sub('^.*:/'+self.name+'/', '', l), '"];')
+                print('"'+self.name+'" -> "'+re.sub(':.*$'+''+l).strip('/')+'" [label="'+re.sub('^.*:/'+self.name+'/'+''+l)+'"];')
     @staticmethod
     def dot():
         print('digraph G {')
         print('rankdir=LR;')
         for c in Container.registry.keys():
-            print('"', c, '";')
+            print('"'+c+'";')
         for c in Container.registry.values():
             c.dot_()
         print('}')
