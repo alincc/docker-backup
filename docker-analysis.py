@@ -93,7 +93,7 @@ class Container(DockerObject):
         res = []
         if not self.has(self.HostConfig, 'VolumesFrom'): return res
         res += self.HostConfig.VolumesFrom
-        for v in itertools.islice(res, 0, len(res)): res += Container.get(v).volumes()
+        for v in itertools.islice(res, 0, len(res)): res += Container.get(re.sub(':.*$', '', v)).volumes()
         return res
     def links(self):
         res = []
