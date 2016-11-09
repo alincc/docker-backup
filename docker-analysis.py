@@ -101,20 +101,62 @@ class Container(DockerObject):
         res += [ re.sub(':.*$', '', l).strip('/') for l in self.HostConfig.Links ]
         for l in itertools.islice(res, 0, len(res)): res += Container.get(l).links()
         return res
+    def colour(self):
+        if self.State.Running: return 'green'
+        if self.State.Paused: return 'grey'
+        if self.State.Restarting: return 'yellow2'
+        return 'indianred1'
+    def mounts(self):
+        return [ m['Destination'] for m in self.Mounts ]
     def dot_(self):
         for v in self.volumes():
-            print('"'+self.name+'" -> "'+v+'" [label="volumes"];')
+            print('  "'+self.name+'" -> "'+v+'" [label="'+'\\n'.join(self.get(v).mounts())+'"];')
         if self.has(self.HostConfig, 'Links'):
             for l in self.HostConfig.Links:
-                print('"'+self.name+'" -> "'+re.sub(':.*$', '', l).strip('/')+'" [label="'+re.sub('^.*:/'+self.name+'/', '', l)+'"];')
+                print('  "'+self.name+'" -> "'+re.sub(':.*$', '', l).strip('/')+'" [label="'+re.sub('^.*:/'+self.name+'/', '', l)+'",style=dashed];')
     @staticmethod
     def dot():
         print('digraph G {')
-        print('rankdir=LR;')
-        for c in Container.registry.keys():
-            print('"'+c+'";')
+        print('  rankdir=LR;')
+        ips = dict()
+        for c in Container.registry.values():
+            for i, e in c.HostConfig.PortBindings.items():
+                for b in e:
+                    key = b['HostIp'] if b['HostIp'] else 'localhost'
+                    if not key in ips:
+                        ips[key] = []
+                    ips[key].append(b['HostPort'])
+        for ip, ports in ips.items():
+            print('    subgraph cluster'+re.sub('\.', '_', ip)+' {')
+            print('      label="'+ip+'";')
+            for port in ports:
+                print('      "'+ip+':'+port+'" [label="'+port+'"];')
+            print('    }')
+        for n, c in Container.registry.items():
+            print('  "'+n+'" [label="'+n+'\\n'+c.Config.Image+'",fillcolor='+c.colour()+',style=filled];')
+            for i, e in c.HostConfig.PortBindings.items():
+                for b in e:
+                    key = b['HostIp'] if b['HostIp'] else 'localhost'
+                    print('  "'+key+':'+b['HostPort']+'" -> "'+n+'" [label="'+i+'",style=dashed];')
+            if c.Mounts:
+                for m in c.Mounts:
+                    if not re.match('^/var/lib/docker/volumes/', m['Source']):
+                        print('  "'+c.name+'" -> "'+m['Source']+'" [label="'+m['Destination']+'"];')
         for c in Container.registry.values():
             c.dot_()
+        print("  {rank=same; ")
+        for c in Container.registry.values():
+            if c.Mounts:
+                for m in c.Mounts:
+                    if not re.match('^/var/lib/docker/volumes/', m['Source']):
+                        print('    "'+m['Source']+'" [shape=rect];')
+        print('  }')
+        print("  {rank=same; ")
+        for c in Container.registry.values():
+            if c.HostConfig.VolumesFrom:
+                for v in c.HostConfig.VolumesFrom:
+                    print('    "'+v+'"')
+        print('  }')
         print('}')
     def commandline(self, restart=False):
         s = self['State']
