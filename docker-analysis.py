@@ -110,7 +110,7 @@ class Container(DockerObject):
         return [ m['Destination'] for m in self.Mounts ]
     def dot_(self):
         for v in self.volumes():
-            print('  "'+self.name+'" -> "'+v+'" [label="'+'\\n'.join(self.get(v).mounts())+'"];')
+            print('  "'+self.name+'" -> "'+v+'" [label="'+'\\n'.join(self.get(re.sub(':.*$', '', v)).mounts())+'"];')
         if self.has(self.HostConfig, 'Links'):
             for l in self.HostConfig.Links:
                 print('  "'+self.name+'" -> "'+re.sub(':.*$', '', l).strip('/')+'" [label="'+re.sub('^.*:/'+self.name+'/', '', l)+'",style=dashed];')
