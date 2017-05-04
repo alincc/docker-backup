@@ -102,15 +102,15 @@ class Container(DockerObject):
         for l in itertools.islice(res, 0, len(res)): res += Container.get(l).links()
         return res
     def colour(self):
-        if self.State.Running: return 'green'
+        if self.State.Running: return 'springgreen'
         if self.State.Paused: return 'grey'
-        if self.State.Restarting: return 'yellow2'
+        if self.State.Restarting: return 'lightblue'
         return 'indianred1'
     def mounts(self):
         return [ m['Destination'] for m in self.Mounts ]
     def dot_(self):
         for v in self.volumes():
-            print('  "'+self.name+'" -> "'+v+'" [label="'+'\\n'.join(self.get(re.sub(':.*$', '', v)).mounts())+'"];')
+            print('  "'+self.name+'" -> "'+v+'" [label=<<FONT point-size="10">'+'<BR/>'.join(self.get(re.sub(':.*$', '', v)).mounts())+'</FONT>>];')
         if self.has(self.HostConfig, 'Links'):
             for l in self.HostConfig.Links:
                 print('  "'+self.name+'" -> "'+re.sub(':.*$', '', l).strip('/')+'" [label="'+re.sub('^.*:/'+self.name+'/', '', l)+'",style=dashed];')
@@ -130,10 +130,10 @@ class Container(DockerObject):
             print('    subgraph cluster'+re.sub('\.', '_', ip)+' {')
             print('      label="'+ip+'";')
             for port in ports:
-                print('      "'+ip+':'+port+'" [label="'+port+'"];')
+                print('      "'+ip+':'+port+'" [label="'+port+'",shape=box];')
             print('    }')
         for n, c in Container.registry.items():
-            print('  "'+n+'" [label="'+n+'\\n'+c.Config.Image+'",fillcolor='+c.colour()+',style=filled];')
+            print('  "'+n+'" [label=<<FONT point-size="10">'+c.Config.Image+'</FONT><BR/><FONT point-size="18"><B>'+n+'</B></FONT>>,fillcolor='+c.colour()+',style=filled];')
             for i, e in c.HostConfig.PortBindings.items():
                 for b in e:
                     key = b['HostIp'] if b['HostIp'] else 'localhost'
