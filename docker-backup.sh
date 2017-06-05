@@ -114,15 +114,15 @@ fi
 
 (
     if test -n "$backup"; then
-        docker run --rm -i -w / --volumes-from $backup ubuntu tar cjP ${volumes}
+        docker run --rm -i -w / --volumes-from $backup ubuntu tar cP ${volumes}
     elif test -n "$infile"; then
         cat "$infile"
     fi
 ) | (
     if test -n "$toserver"; then
-        ssh $toserver docker run --rm -i -w / --volumes-from $tocontainer ubuntu tar xjP
+        ssh $toserver docker run --rm -i -w / --volumes-from $tocontainer ubuntu tar xvP
     elif test -n "$tocontainer"; then
-        docker run --rm -i -w / --volumes-from $tocontainer ubuntu tar xjP
+        docker run --rm -i -w / --volumes-from $tocontainer ubuntu tar xvP
     elif test -n "$tofile";then
         cat > "$tofile"
     fi
