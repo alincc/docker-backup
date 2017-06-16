@@ -4,6 +4,7 @@ import argparse, subprocess, json, re, itertools
 parser = argparse.ArgumentParser()
 parser.add_argument('container', nargs='*', help='name of the containers')
 parser.add_argument('-d', '--dot', action='store_true', help='draw dot diagram instead of commandline')
+parser.add_argument('-v', '--volumes', action='store_true', help='list volumes')
 parser.add_argument('-r', '--recurse', action='store_true', help='recursively setup container')
 parser.add_argument('-c', '--command', help='docker command, e.g. -c "run -d"')
 parser.add_argument('--restart', help='override the restart argument, e.g. --restart unless-stopped')
@@ -198,6 +199,9 @@ containers = args.container or subprocess.check_output(['docker', 'ps', '-aq']).
 if (args.dot):
     Container.create(containers, args.recurse)
     Container.dot()
+elif (args.volumes):
+    for c in sorted(list(Container.create(containers, args.recurse).values())):
+        if c['Config']['Volumes']: print(c.name+':\n  '+'\n  '.join(c['Config']['Volumes'].keys()))
 else:
     for c in sorted(list(Container.create(containers, args.recurse).values())):
         b = c.commandline(args.restart)
