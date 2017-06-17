@@ -31,7 +31,7 @@ OPTIONS:
   -i, --in-file      <file>      take already existing backup file to import
   -s, --to-server    <server>    copy backup to docker instance on ssh server
   -c, --to-container <container> write backup into container on ssh server
-  -o, --to-file      <file>      write backup to file
+  -o, --to-file      <file>      write backup to tar file
 
 DESCRIPTION:
 
@@ -43,8 +43,8 @@ DESCRIPTION:
 
 EXAMPLE:
 
-  $0 -b wordpress -a -o /tmp/wordpress.bak.tar.bz2
-  $0 -i /tmp/wordpress.bak.tar.bz2 -c wordpress
+  $0 -b wordpress -a -o /tmp/wordpress.bak.tar
+  $0 -i /tmp/wordpress.bak.tar -c wordpress
   $0 -b backup-test -a -s server -c backup-test
 
 EOF
@@ -114,7 +114,11 @@ fi
 
 (
     if test -n "$backup"; then
-        docker run --rm -i -w / --volumes-from $backup ubuntu tar cP ${volumes}
+        verbose=
+        if test -z "$tofile"; then
+            verbose=v
+        fi
+        docker run --rm -i -w / --volumes-from $backup ubuntu tar cP$verbose ${volumes}
     elif test -n "$infile"; then
         cat "$infile"
     fi
@@ -123,7 +127,7 @@ fi
         ssh $toserver docker run --rm -i -w / --volumes-from $tocontainer ubuntu tar xvP
     elif test -n "$tocontainer"; then
         docker run --rm -i -w / --volumes-from $tocontainer ubuntu tar xvP
-    elif test -n "$tofile";then
+    elif test -n "$tofile"; then
         cat > "$tofile"
     fi
 )
