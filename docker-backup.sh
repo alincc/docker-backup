@@ -22,7 +22,7 @@ while test $# -gt 0; do
     case "$1" in
         (-h|--help)
             cat <<EOF
-$0 -b [OPTIONS]
+$0 -l | -b <container> [OPTIONS]
 
 OPTIONS:
   -b, --backup       <container> name of the docker container to backup
@@ -32,6 +32,7 @@ OPTIONS:
   -s, --to-server    <server>    copy backup to docker instance on ssh server
   -c, --to-container <container> write backup into container on ssh server
   -o, --to-file      <file>      write backup to tar file
+  -l, --list-volumes <container> list all volumes in container, then exit
 
 DESCRIPTION:
 
@@ -80,6 +81,13 @@ EOF
         (-v|--volume)
             shift
             volumes+=("$1")
+            ;;
+        (-l|--list-volumes)
+            shift
+            if test $# -gt 0; then
+                get-volumes $* | tr ' ' '\n'
+                exit 0
+            fi
             ;;
         (*)
             echo "**** Error: unknown argument $1, try $0 --help" 1>&2
